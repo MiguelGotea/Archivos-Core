@@ -1,0 +1,37 @@
+name: 🔄 Sync PitayaCore → All Subdomains
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'core/**'
+      - 'docs/**'
+      - '.agent/**'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        subdomain:
+          - repo: "erp.batidospitaya.com"
+            path_secret: "HOSTINGER_PATH"
+          - repo: "api.batidospitaya.com"
+            path_secret: "HOSTINGER_PATH_API"
+          - repo: "talento.batidospitaya.com"
+            path_secret: "HOSTINGER_PATH_TALENTO"
+
+    steps:
+      - name: 🚀 Dispatch a ${{ matrix.subdomain.repo }}
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.SYNC_TOKEN }}
+          repository: MiguelGotea/${{ matrix.subdomain.repo }}
+          event-type: pitayacore-sync
+          client-payload: |
+            {
+              "sha": "${{ github.sha }}",
+              "path_secret": "${{ matrix.subdomain.path_secret }}",
+              "triggered_by": "PitayaCore"
+            }
