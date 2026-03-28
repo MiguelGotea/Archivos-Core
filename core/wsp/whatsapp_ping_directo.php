@@ -41,8 +41,12 @@ if (!$instancia || !$numero) {
     exit;
 }
 
-// Limpiar número
+// Limpiar número y asegurar prefijo de país (505 para Nicaragua si son 8 dígitos)
 $numeroLimpio = preg_replace('/\D/', '', $numero);
+if (strlen($numeroLimpio) === 8) {
+    $numeroLimpio = '505' . $numeroLimpio;
+}
+
 if (strlen($numeroLimpio) < 8) {
     echo json_encode(['success' => false, 'error' => 'Número de teléfono inválido (mínimo 8 dígitos)']);
     exit;
