@@ -1,4 +1,4 @@
-name: 🔄 Sync PitayaCore → All Subdomains (v12.4)
+name: 🔄 Sync PitayaCore → All Subdomains (v13 Mano de Hierro)
 
 on:
   push:
@@ -8,20 +8,20 @@ on:
       - 'docs/**'
       - '.agent/**'
   repository_dispatch:
-    types: [ force-sync, pitayacore-sync ]
+    types: [ force-sync ]
 
 jobs:
-  sync:
+  orchestrate:
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 1 # Forzar ejecución en serie para máxima fiabilidad
+      max-parallel: 1 # Inyección secuencial para máxima certeza
       matrix:
         repo: [api.batidospitaya, erp.batidospitaya, talento.batidospitaya]
     steps:
-      - name: 🚀 1. Checkout
+      - name: 🚀 1. Checkout Master (PitayaCore)
         uses: actions/checkout@v4
 
-      - name: 🛡️ 2. Filtro Anti-Circular (v12.4)
+      - name: 🛡️ 2. Filtro Anti-Circular (v13)
         id: filter
         env:
           MSG: ${{ github.event.head_commit.message || 'Dispatch Force Sync' }}
@@ -30,26 +30,34 @@ jobs:
           CLEAN_MSG=$(echo "$MSG" | tr -d '\n\r' | sed 's/[^a-zA-Z0-9. ]/ /g')
           if echo "$CLEAN_MSG" | grep -q "$REPRO"; then
             echo "SKIP=true" >> $GITHUB_ENV
-            echo "⏭️ OMITIENDO: $REPRO (Origen propio)"
+            echo "⏭️ OMITIENDO: Identificado como origen ($REPRO)."
           else
             echo "SKIP=false" >> $GITHUB_ENV
-            echo "✅ ENVIANDO a $REPRO"
+            echo "✅ PROCESANDO inyección para $REPRO."
           fi
 
-      - name: 🕒 3. Delay Escalonado (Certeza Total)
+      - name: 🏗️ 3. Inyección Directa en ${{ matrix.repo }}
         if: ${{ env.SKIP == 'false' }}
         run: |
-          # Evitamos saturar el bus de GitHub con un delay proporcional
-          if [ "${{ matrix.repo }}" == "api.batidospitaya" ]; then sleep 0; fi
-          if [ "${{ matrix.repo }}" == "erp.batidospitaya" ]; then sleep 5; fi
-          if [ "${{ matrix.repo }}" == "talento.batidospitaya" ]; then sleep 10; fi
-          echo "🚀 Señal lista para enviar..."
-
-      - name: 🛰️ 4. Dispatch Robusto a ${{ matrix.repo }}
-        if: ${{ env.SKIP == 'false' }}
-        uses: peter-evans/repository-dispatch@v3
-        with:
-          token: ${{ secrets.SYNC_TOKEN }}
-          repository: MiguelGotea/${{ matrix.repo }}
-          event-type: pitayacore-sync
-          client-payload: '{"sha": "${{ github.sha }}", "confirm": "true"}'
+          # 3.1 Clonamos el subdominio
+          git clone https://x-access-token:${{ secrets.SYNC_TOKEN }}@github.com/MiguelGotea/${{ matrix.repo }}.git _target
+          
+          # 3.2 Sincronización física de archivos
+          rsync -av --delete ./core/   _target/core/
+          rsync -av --delete ./docs/   _target/docs/
+          rsync -av --delete .agent/   _target/.agent/
+          
+          # 3.3 Commit y Push Directo (Sin Dispatch)
+          cd _target
+          git config user.name "Mano de Hierro Bot"
+          git config user.email "bot@batidospitaya.com"
+          git add core/ docs/ .agent/
+          
+          if ! git diff --staged --quiet; then
+            git commit -m "chore(core): sync v13 (forced injection)"
+            # El push fallará si hay problemas de red, poniendo el semáforo en ROJO (lo que queremos)
+            git push origin main
+            echo "✅ INYECCIÓN COMPLETADA en ${{ matrix.repo }}"
+          else
+            echo "⏭️ NADA QUE INYECTAR en ${{ matrix.repo }} (Ya estaba al día)"
+          fi
