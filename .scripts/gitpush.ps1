@@ -1,10 +1,10 @@
-﻿# Auto-navegar a la raíz (GPS Interno)
+# Auto-navegar a la raíz (GPS Interno)
 Set-Location $PSScriptRoot
 Set-Location ..
 
 # Script Tanque v7 (Anti-Choque)
 git add .
-$msg = "Human Push $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+$msg = "Human Push (PitayaCore) $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 git commit -m "$msg" 2>$null
 
 Write-Host "🚀 Intentando sincronizar y subir cambios a PitayaCore..." -ForegroundColor Cyan

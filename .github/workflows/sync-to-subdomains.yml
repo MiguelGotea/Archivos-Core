@@ -1,4 +1,4 @@
-﻿name: 🔄 Sync PitayaCore → All Subdomains (v11.1)
+name: 🔄 Sync PitayaCore → All Subdomains (v12)
 
 on:
   push:
@@ -18,18 +18,20 @@ jobs:
       - name: 🚀 1. Checkout
         uses: actions/checkout@v4
 
-      - name: 🛡️ 2. Filtro Anti-Circular (v11.1 Env Secure)
+      - name: 🛡️ 2. Filtro Anti-Circular (v12 Robust)
         id: filter
         env:
           MSG: ${{ github.event.head_commit.message }}
           REPRO: ${{ matrix.repo }}
         run: |
-          if [[ "$MSG" == *"$REPRO"* ]]; then
+          # Limpiamos el mensaje de caracteres especiales y comparamos
+          CLEAN_MSG=$(echo "$MSG" | tr -d '\n\r' | sed 's/[^a-zA-Z0-9. ]/ /g')
+          if echo "$CLEAN_MSG" | grep -q "$REPRO"; then
             echo "SKIP=true" >> $GITHUB_ENV
-            echo "⏭️ OMITIENDO: Cambio detectado como origen propio."
+            echo "⏭️ OMITIENDO: Cambio detectado como origen propio ($REPRO)."
           else
             echo "SKIP=false" >> $GITHUB_ENV
-            echo "✅ ENVIANDO: Mensaje limpio de filtros de origen."
+            echo "✅ ENVIANDO: Mensaje libre de loops para $REPRO."
           fi
 
       - name: 🚀 3. Dispatch a ${{ matrix.repo }}
