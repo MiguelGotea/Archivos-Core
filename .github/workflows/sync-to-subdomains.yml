@@ -1,4 +1,4 @@
-name: 🔄 Sync PitayaCore → All Subdomains (v12.3)
+name: 🔄 Sync PitayaCore → All Subdomains (v12.4)
 
 on:
   push:
@@ -14,33 +14,42 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     strategy:
+      max-parallel: 1 # Forzar ejecución en serie para máxima fiabilidad
       matrix:
         repo: [api.batidospitaya, erp.batidospitaya, talento.batidospitaya]
     steps:
       - name: 🚀 1. Checkout
         uses: actions/checkout@v4
 
-      - name: 🛡️ 2. Filtro Anti-Circular (v12.3 Robust)
+      - name: 🛡️ 2. Filtro Anti-Circular (v12.4)
         id: filter
         env:
           MSG: ${{ github.event.head_commit.message || 'Dispatch Force Sync' }}
           REPRO: ${{ matrix.repo }}
         run: |
-          # Limpiamos el mensaje de caracteres especiales y comparamos
           CLEAN_MSG=$(echo "$MSG" | tr -d '\n\r' | sed 's/[^a-zA-Z0-9. ]/ /g')
           if echo "$CLEAN_MSG" | grep -q "$REPRO"; then
             echo "SKIP=true" >> $GITHUB_ENV
-            echo "⏭️ OMITIENDO: Cambio detectado como origen propio ($REPRO)."
+            echo "⏭️ OMITIENDO: $REPRO (Origen propio)"
           else
             echo "SKIP=false" >> $GITHUB_ENV
-            echo "✅ ENVIANDO: Mensaje libre de loops para $REPRO."
+            echo "✅ ENVIANDO a $REPRO"
           fi
 
-      - name: 🚀 3. Dispatch a ${{ matrix.repo }}
+      - name: 🕒 3. Delay Escalonado (Certeza Total)
+        if: ${{ env.SKIP == 'false' }}
+        run: |
+          # Evitamos saturar el bus de GitHub con un delay proporcional
+          if [ "${{ matrix.repo }}" == "api.batidospitaya" ]; then sleep 0; fi
+          if [ "${{ matrix.repo }}" == "erp.batidospitaya" ]; then sleep 5; fi
+          if [ "${{ matrix.repo }}" == "talento.batidospitaya" ]; then sleep 10; fi
+          echo "🚀 Señal lista para enviar..."
+
+      - name: 🛰️ 4. Dispatch Robusto a ${{ matrix.repo }}
         if: ${{ env.SKIP == 'false' }}
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.SYNC_TOKEN }}
           repository: MiguelGotea/${{ matrix.repo }}
           event-type: pitayacore-sync
-          client-payload: '{"sha": "${{ github.sha }}"}'
+          client-payload: '{"sha": "${{ github.sha }}", "confirm": "true"}'
