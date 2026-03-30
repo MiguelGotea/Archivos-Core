@@ -35,10 +35,10 @@ jobs:
           fi
 
       - name: 🚀 3. Dispatch a ${{ matrix.repo }}
-        if: env.SKIP == 'false'
+        if: ${{ env.SKIP == 'false' }}
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.SYNC_TOKEN }}
           repository: MiguelGotea/${{ matrix.repo }}
           event-type: pitayacore-sync
-          client_payload: '{"sha": "${{ github.sha }}"}'
+          client-payload: '{"sha": "${{ github.sha }}"}'
