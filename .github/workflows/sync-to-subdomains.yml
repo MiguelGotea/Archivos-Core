@@ -1,4 +1,4 @@
-﻿name: 🔄 Sync PitayaCore → All Subdomains (v11 Audit)
+﻿name: 🔄 Sync PitayaCore → All Subdomains (v11.1)
 
 on:
   push:
@@ -7,8 +7,6 @@ on:
       - 'core/**'
       - 'docs/**'
       - '.agent/**'
-  repository_dispatch:
-    types: [ core-updated-by-subdomain ]
 
 jobs:
   sync:
@@ -20,22 +18,25 @@ jobs:
       - name: 🚀 1. Checkout
         uses: actions/checkout@v4
 
-      - name: 🛡️ 2. Dispatch Inteligente (Anti-Circular v11)
-        if: "!contains(github.event.head_commit.message, matrix.repo)"
+      - name: 🛡️ 2. Filtro Anti-Circular (v11.1 Env Secure)
+        id: filter
+        env:
+          MSG: ${{ github.event.head_commit.message }}
+          REPRO: ${{ matrix.repo }}
+        run: |
+          if [[ "$MSG" == *"$REPRO"* ]]; then
+            echo "SKIP=true" >> $GITHUB_ENV
+            echo "⏭️ OMITIENDO: Cambio detectado como origen propio."
+          else
+            echo "SKIP=false" >> $GITHUB_ENV
+            echo "✅ ENVIANDO: Mensaje limpio de filtros de origen."
+          fi
+
+      - name: 🚀 3. Dispatch a ${{ matrix.repo }}
+        if: env.SKIP == 'false'
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.SYNC_TOKEN }}
           repository: MiguelGotea/${{ matrix.repo }}
           event-type: pitayacore-sync
           client_payload: '{"sha": "${{ github.sha }}"}'
-
-      - name: 🔬 3. AuditorÃ­a de DecisiÃ³n (Filtro v11)
-        run: |
-          MSG="${{ github.event.head_commit.message }}"
-          REPO="${{ matrix.repo }}"
-          if [[ "$MSG" == *"$REPO"* ]]; then
-            echo "⏭️ OMITIENDO envío a $REPO: Cambio detectado como origen propio."
-          else
-            echo "✅ ENVIANDO a $REPO: Mensaje limpio de filtros de origen."
-            echo "�� SHA: ${{ github.sha }}"
-          fi
