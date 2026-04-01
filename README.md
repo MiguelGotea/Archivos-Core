@@ -56,3 +56,4 @@ Para integrar un nuevo repositorio al ecosistema:
 ## 🛠️ Herramientas
 - `PitayaCore/.scripts/gitpush.ps1`: El disparador de inyección global.
 - `VisualCode/gitsync-local.ps1`: El sincronizador local de alta precisión.
+- [**05_Guia_Instalacion_Nueva_PC.md**](docs/05_Guia_Instalacion_Nueva_PC.md): Guía detallada para configurar el ecosistema desde cero.
